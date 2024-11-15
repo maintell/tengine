@@ -410,6 +410,7 @@ found:
             }
 
             h->hash = 1;
+            h->next = NULL;
             ngx_str_set(&h->key, "Content-Encoding");
             ngx_str_set(&h->value, "gzip");
             r->headers_out.content_encoding = h;
@@ -494,10 +495,11 @@ ngx_http_memcached_filter(void *data, ssize_t bytes)
 
     if (u->length == (ssize_t) ctx->rest) {
 
-        if (ngx_strncmp(b->last,
+        if (bytes > u->length
+            || ngx_strncmp(b->last,
                    ngx_http_memcached_end + NGX_HTTP_MEMCACHED_END - ctx->rest,
                    bytes)
-            != 0)
+               != 0)
         {
             ngx_log_error(NGX_LOG_ERR, ctx->request->connection->log, 0,
                           "memcached sent invalid trailer");
@@ -549,7 +551,9 @@ ngx_http_memcached_filter(void *data, ssize_t bytes)
 
     last += (size_t) (u->length - NGX_HTTP_MEMCACHED_END);
 
-    if (ngx_strncmp(last, ngx_http_memcached_end, b->last - last) != 0) {
+    if (bytes > u->length
+        || ngx_strncmp(last, ngx_http_memcached_end, b->last - last) != 0)
+    {
         ngx_log_error(NGX_LOG_ERR, ctx->request->connection->log, 0,
                       "memcached sent invalid trailer");
 
